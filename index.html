@@ -6,84 +6,41 @@
     <title>中國象棋</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
-        
-        /* 模擬手機 App 外框 */
         .app-container { background-color: white; width: 100%; max-width: 500px; height: 100%; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-        
-        /* 分頁畫面切換控制 */
         .screen { display: none; flex-direction: column; height: 100%; width: 100%; overflow-y: auto; padding-bottom: 20px;}
         .screen.active { display: flex; }
 
-        /* --- 導覽列 (Top Bar) --- */
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: #c0392b; color: white; padding: 10px 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5;}
         .top-bar button { background: none; border: none; color: white; font-size: 16px; font-weight: bold; cursor: pointer; padding: 5px; }
         .top-bar .title { font-size: 18px; font-weight: bold; }
 
-        /* --- 第一頁：設定畫面 --- */
         .settings-content { padding: 30px 20px; display: flex; flex-direction: column; gap: 20px; }
         
-        /* 🌟 重新用 CSS 畫一個專業的中國象棋 LOGO 🌟 */
-        .app-logo {
-            text-align: center;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .app-logo-piece {
-            width: 70px;
-            height: 70px;
-            background-color: #fce4a6; /* 標準木頭底色 */
-            border-radius: 50%;
-            border: 3px solid #a67c00; /* 金色外框 */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
-            position: relative;
-        }
-        .app-logo-text {
-            color: #c0392b; /* 紅帥文字 */
-            font-size: 40px;
-            font-weight: bold;
-            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
-            text-shadow: 1px 1px 0 #fff, 0 0 5px rgba(192, 57, 43, 0.4); /* 書法字質感 */
-        }
-        /* LOGO 內圈裝飾線 */
-        .app-logo-piece::after {
-            content: '';
-            position: absolute;
-            top: 5px; left: 5px; right: 5px; bottom: 5px;
-            border-radius: 50%;
-            border: 1px solid rgba(192, 57, 43, 0.4);
-        }
+        .app-logo { text-align: center; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; }
+        .app-logo-piece { width: 70px; height: 70px; background-color: #fce4a6; border-radius: 50%; border: 3px solid #a67c00; display: flex; justify-content: center; align-items: center; box-shadow: 2px 2px 8px rgba(0,0,0,0.2); position: relative; }
+        .app-logo-text { color: #c0392b; font-size: 40px; font-weight: bold; font-family: 'Microsoft YaHei', sans-serif; text-shadow: 1px 1px 0 #fff; }
+        .app-logo-piece::after { content: ''; position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px; border-radius: 50%; border: 1px solid rgba(192, 57, 43, 0.4); }
 
         .app-title { text-align: center; font-size: 28px; color: #c0392b; font-weight: bold; margin-top: 0;}
         select, .btn-main, .btn-danger { padding: 15px; font-size: 18px; border-radius: 8px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; text-align: center;}
         .btn-main { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.3);}
-        .btn-main:active { background-color: #2ecc71; transform: translateY(2px); box-shadow: none;}
         .btn-danger { background-color: #e74c3c; color: white; border: none; font-weight: bold; margin-top: 20px;}
-        
-        /* 🌟 修復問題：修正文字遮住，將 margin-bottom 改為正 8px 🌟 */
         label { font-weight: bold; color: #333; margin-bottom: 8px; display: block;}
 
-        /* --- 第二頁：棋盤畫面 --- */
         .game-area { display: flex; flex-direction: column; align-items: center; padding: 15px 10px; flex-grow: 1;}
         canvas { background-color: #E2C28E; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); border-radius: 5px; max-width: 100%; touch-action: none; }
         .status { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #c0392b; min-height: 28px; }
         #msg { color: #e74c3c; font-size: 16px; font-weight: bold; margin-top: 10px; text-align: center; min-height: 24px;}
         #ai-thinking { color: #8e44ad; font-weight: bold; text-align: center; margin-top: 5px; min-height: 24px;}
 
-        /* --- 第三頁：紀錄畫面 --- */
         .history-content { padding: 20px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box;}
-        .scoreboard { background: #f1c40f; color: #333; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-        .history-list { flex-grow: 1; overflow-y: auto; font-size: 18px; line-height: 2; font-family: 'Microsoft YaHei', sans-serif; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;}
+        .scoreboard { background: #f1c40f; color: #333; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 18px;}
+        .history-list { flex-grow: 1; overflow-y: auto; font-size: 18px; line-height: 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;}
         .history-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 8px 0; }
         .history-step { width: 35px; color: #7f8c8d; font-size: 14px; text-align: right; margin-right: 15px;}
         .history-red { color: #c0392b; width: 90px; font-weight: bold;}
         .history-black { color: #2c3e50; width: 90px; font-weight: bold;}
 
-        /* --- 結算彈出視窗 --- */
         #overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
         #overlay h1 { color: #c0392b; font-size: 40px; margin: 0 0 20px 0;}
     </style>
@@ -91,34 +48,22 @@
 <body>
 
 <div class="app-container">
-
     <div id="screen-setup" class="screen active">
         <div class="settings-content">
-            <div class="app-logo">
-                <div class="app-logo-piece">
-                    <span class="app-logo-text">帥</span>
-                </div>
-            </div>
+            <div class="app-logo"><div class="app-logo-piece"><span class="app-logo-text">帥</span></div></div>
             <h1 class="app-title">中國象棋</h1>
-            
             <label>對弈模式：</label>
             <select id="mode" onchange="toggleColorSelect()">
                 <option value="human">玩家 vs 玩家</option>
                 <option value="ai" selected>玩家 vs 電腦</option>
                 <option value="ai-ai">電腦 vs 電腦 (觀戰)</option>
             </select>
-
-            <div id="color-select-div">
-                <label>玩家陣營：</label>
-                <select id="human-color">
-                    <option value="R" selected>🔴 執紅 (先手)</option>
-                    <option value="B">⚫ 執黑 (後手)</option>
-                </select>
+            <div id="color-select-div"><label>玩家陣營：</label>
+                <select id="human-color"><option value="R" selected>🔴 執紅 (先手)</option><option value="B">⚫ 執黑 (後手)</option></select>
             </div>
-
             <button class="btn-main" onclick="startGame()">🔥 開始對弈 🔥</button>
-            
-            <div style="flex-grow: 1;"></div> <button class="btn-danger" onclick="clearScore()">🗑️ 清除所有戰績</button>
+            <div style="flex-grow: 1;"></div>
+            <button class="btn-danger" onclick="clearScore()">🗑️ 清除所有戰績</button>
         </div>
     </div>
 
@@ -128,14 +73,12 @@
             <div class="title">棋盤</div>
             <button onclick="switchScreen('screen-history')">📜 棋譜</button>
         </div>
-
         <div class="game-area">
             <div class="status" id="turn-text">🔴 輪到紅方下棋</div>
             <canvas id="chessBoard" width="500" height="560"></canvas>
             <div id="msg">祝您好運！</div>
             <div id="ai-thinking"></div>
         </div>
-
         <div id="overlay">
             <h1 id="win-text">紅方獲勝！</h1>
             <button class="btn-main" style="width: 200px;" onclick="startGame()">再來一局</button>
@@ -144,21 +87,12 @@
     </div>
 
     <div id="screen-history" class="screen">
-        <div class="top-bar">
-            <button onclick="switchScreen('screen-game')">◀ 返回棋盤</button>
-            <div class="title">對局紀錄</div>
-            <div style="width: 60px;"></div> </div>
-
-        <div class="history-content">
-            <div class="scoreboard" id="score-board">🏆 戰績：紅 0 | 黑 0</div>
-            <div class="history-list" id="history-list"></div>
-        </div>
+        <div class="top-bar"><button onclick="switchScreen('screen-game')">◀ 返回棋盤</button><div class="title">對局紀錄</div><div style="width: 60px;"></div></div>
+        <div class="history-content"><div class="scoreboard" id="score-board">🏆 戰績：紅 0 | 黑 0</div><div class="history-list" id="history-list"></div></div>
     </div>
-
 </div>
 
 <script>
-    // 介面切換邏輯
     function switchScreen(screenId) {
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
@@ -169,7 +103,6 @@
         document.getElementById('color-select-div').style.display = (mode === 'human' || mode === 'ai-ai') ? 'none' : 'block';
     }
 
-    // 遊戲核心邏輯
     const canvas = document.getElementById('chessBoard');
     const ctx = canvas.getContext('2d');
     const cellSize = 50, margin = 50;
@@ -179,473 +112,223 @@
     let selectedPos = null;  
     let isGameOver = false;
     let moveCount = 1; 
+    let historyStates = []; // 紀錄歷史盤面
 
-    // 戰績存儲系統 (localStorage)
     let scoreStats = JSON.parse(localStorage.getItem('xiangqi_scores')) || { R: 0, B: 0 };
-    
-    function updateScoreBoard() {
-        document.getElementById('score-board').innerText = `🏆 戰績：紅方勝 ${scoreStats.R} | 黑方勝 ${scoreStats.B}`;
-    }
+    function updateScoreBoard() { document.getElementById('score-board').innerText = `🏆 戰績：紅方勝 ${scoreStats.R} | 黑方勝 ${scoreStats.B}`; }
+    function clearScore() { if(confirm("確定要清除戰績嗎？")) { scoreStats = { R: 0, B: 0 }; localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats)); updateScoreBoard(); } }
 
-    function clearScore() {
-        if(confirm("確定要將雙方勝場戰績歸零嗎？")) {
-            scoreStats = { R: 0, B: 0 };
-            localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats));
-            updateScoreBoard();
-            alert("戰績已歸零！");
-        }
-    }
+    const pieceTexts = { 'R_K': '帥', 'R_A': '仕', 'R_E': '相', 'R_H': '傌', 'R_R': '俥', 'R_C': '炮', 'R_P': '兵', 'B_K': '將', 'B_A': '士', 'B_E': '象', 'B_H': '馬', 'B_R': '車', 'B_C': '砲', 'B_P': '卒' };
 
-    const pieceTexts = {
-        'R_K': '帥', 'R_A': '仕', 'R_E': '相', 'R_H': '傌', 'R_R': '俥', 'R_C': '炮', 'R_P': '兵',
-        'B_K': '將', 'B_A': '士', 'B_E': '象', 'B_H': '馬', 'B_R': '車', 'B_C': '砲', 'B_P': '卒'
-    };
-
-    function startGame() {
-        switchScreen('screen-game');
-        document.getElementById('overlay').style.display = 'none';
-        initBoard();
-    }
+    function startGame() { switchScreen('screen-game'); document.getElementById('overlay').style.display = 'none'; initBoard(); }
 
     function initBoard() {
         board = [
-            ['B_R', 'B_H', 'B_E', 'B_A', 'B_K', 'B_A', 'B_E', 'B_H', 'B_R'],
-            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
-            [null,  'B_C', null,  null,  null,  null,  null,  'B_C', null ],
-            ['B_P', null,  'B_P', null,  'B_P', null,  'B_P', null,  'B_P'],
-            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
-            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
-            ['R_P', null,  'R_P', null,  'R_P', null,  'R_P', null,  'R_P'],
-            [null,  'R_C', null,  null,  null,  null,  null,  'R_C', null ],
-            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
-            ['R_R', 'R_H', 'R_E', 'R_A', 'R_K', 'R_A', 'R_E', 'R_H', 'R_R']
+            ['B_R', 'B_H', 'B_E', 'B_A', 'B_K', 'B_A', 'B_E', 'B_H', 'B_R'], [null,null,null,null,null,null,null,null,null], [null,'B_C',null,null,null,null,null,'B_C',null], ['B_P',null,'B_P',null,'B_P',null,'B_P',null,'B_P'], [null,null,null,null,null,null,null,null,null], [null,null,null,null,null,null,null,null,null], ['R_P',null,'R_P',null,'R_P',null,'R_P',null,'R_P'], [null,'R_C',null,null,null,null,null,'R_C',null], [null,null,null,null,null,null,null,null,null], ['R_R', 'R_H', 'R_E', 'R_A', 'R_K', 'R_A', 'R_E', 'R_H', 'R_R']
         ];
-        currentPlayer = 'R';
-        selectedPos = null;
-        isGameOver = false;
-        moveCount = 1;
-        
-        document.getElementById('msg').innerText = "遊戲開始！";
-        document.getElementById('ai-thinking').innerText = "";
-        document.getElementById('history-list').innerHTML = ""; 
-        updateScoreBoard();
-        
+        currentPlayer = 'R'; selectedPos = null; isGameOver = false; moveCount = 1; historyStates = [JSON.stringify(board)];
+        document.getElementById('msg').innerText = "遊戲開始！"; document.getElementById('ai-thinking').innerText = ""; document.getElementById('history-list').innerHTML = ""; 
+        updateScoreBoard(); updateStatus(); drawBoard();
+
         let mode = document.getElementById('mode').value;
         let humanColor = document.getElementById('human-color').value;
-
-        updateStatus();
-        drawBoard();
-
-        // 觸發 AI
-        if (mode === 'ai-ai') {
-            document.getElementById('ai-thinking').innerText = "🔮 AI 正在互搏...";
-            setTimeout(makeAIMove, 500);
-        } else if (mode === 'ai' && humanColor === 'B') {
-            document.getElementById('ai-thinking').innerText = "🔮 AI 正在推演未來...";
-            setTimeout(makeAIMove, 500);
-        }
+        if (mode === 'ai-ai') { setTimeout(makeAIMove, 500); } else if (mode === 'ai' && humanColor === 'B') { setTimeout(makeAIMove, 500); }
     }
 
-    // 記譜翻譯系統
     function getNotation(piece, startX, startY, endX, endY, currentBoard) {
-        const type = piece.charAt(2);
-        const color = piece.charAt(0);
-        const isRed = (color === 'R');
-
-        let pieceName = pieceTexts[piece];
-        const redLines = ['九','八','七','六','五','四','三','二','一'];
+        const type = piece.charAt(2); const color = piece.charAt(0); const isRed = (color === 'R');
+        let pieceName = pieceTexts[piece]; const redLines = ['九','八','七','六','五','四','三','二','一'];
         let startLineStr = isRed ? redLines[startX] : (startX + 1).toString();
         let endLineStr = isRed ? redLines[endX] : (endX + 1).toString();
-        
-        let action = '';
-        if (startY === endY) action = '平';
-        else action = isRed ? ((endY < startY) ? '進' : '退') : ((endY > startY) ? '進' : '退');
-
-        let valueStr = '';
-        if (['H', 'E', 'A'].includes(type) || action === '平') valueStr = endLineStr;
-        else {
-            let steps = Math.abs(endY - startY);
-            valueStr = isRed ? ['一','二','三','四','五','六','七','八','九'][steps-1] : steps.toString();
-        }
-
-        let sameColPieces = [];
-        for (let y = 0; y < 10; y++) if (currentBoard[y][startX] === piece) sameColPieces.push(y);
-        
-        if (sameColPieces.length === 2) {
-            let isFront = isRed ? (startY === Math.min(...sameColPieces)) : (startY === Math.max(...sameColPieces));
-            pieceName = (isFront ? "前" : "後") + pieceName;
-            startLineStr = ''; 
-        }
+        let action = (startY === endY) ? '平' : (isRed ? (endY < startY ? '進' : '退') : (endY > startY ? '進' : '退'));
+        let valueStr = (['H', 'E', 'A'].includes(type) || action === '平') ? endLineStr : (isRed ? ['一','二','三','四','五','六','七','八','九'][Math.abs(endY-startY)-1] : Math.abs(endY-startY).toString());
         return pieceName + startLineStr + action + valueStr;
     }
 
     function addHistory(notation, color) {
         const historyList = document.getElementById('history-list');
-        if (color === 'R') {
-            const row = document.createElement('div');
-            row.className = 'history-row';
-            row.innerHTML = `<span class="history-step">${moveCount}.</span><span class="history-red">${notation}</span><span class="history-black" id="black-move-${moveCount}"></span>`;
-            historyList.appendChild(row);
-        } else {
-            const blackMoveSpan = document.getElementById(`black-move-${moveCount}`);
-            if (blackMoveSpan) blackMoveSpan.innerText = notation;
-            moveCount++;
-        }
+        if (color === 'R') { historyList.innerHTML += `<div class="history-row"><span class="history-step">${moveCount}.</span><span class="history-red">${notation}</span><span class="history-black" id="black-move-${moveCount}"></span></div>`; }
+        else { let el = document.getElementById(`black-move-${moveCount}`); if (el) el.innerText = notation; moveCount++; }
         historyList.scrollTop = historyList.scrollHeight;
     }
 
-    // 畫圖系統
     function drawBoard() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
-
+        ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
         for (let i = 0; i < 10; i++) { ctx.beginPath(); ctx.moveTo(margin, margin + i * cellSize); ctx.lineTo(margin + 8 * cellSize, margin + i * cellSize); ctx.stroke(); }
-        for (let i = 0; i < 9; i++) {
-            ctx.beginPath(); ctx.moveTo(margin + i * cellSize, margin); ctx.lineTo(margin + i * cellSize, margin + 4 * cellSize); ctx.stroke();
-            ctx.beginPath();
-            if (i === 0 || i === 8) { ctx.moveTo(margin + i * cellSize, margin + 4 * cellSize); ctx.lineTo(margin + i * cellSize, margin + 9 * cellSize); } 
-            else { ctx.moveTo(margin + i * cellSize, margin + 5 * cellSize); ctx.lineTo(margin + i * cellSize, margin + 9 * cellSize); }
-            ctx.stroke();
-        }
-        ctx.beginPath();
-        ctx.moveTo(margin + 3 * cellSize, margin); ctx.lineTo(margin + 5 * cellSize, margin + 2 * cellSize);
-        ctx.moveTo(margin + 5 * cellSize, margin); ctx.lineTo(margin + 3 * cellSize, margin + 2 * cellSize);
-        ctx.moveTo(margin + 3 * cellSize, margin + 7 * cellSize); ctx.lineTo(margin + 5 * cellSize, margin + 9 * cellSize);
-        ctx.moveTo(margin + 5 * cellSize, margin + 7 * cellSize); ctx.lineTo(margin + 3 * cellSize, margin + 9 * cellSize);
-        ctx.stroke();
-
-        ctx.fillStyle = '#333'; ctx.font = "24px 'Microsoft YaHei'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("楚 河", margin + 2 * cellSize, margin + 4.5 * cellSize);
-        ctx.fillText("漢 界", margin + 6 * cellSize, margin + 4.5 * cellSize);
-
-        for (let y = 0; y < 10; y++) {
-            for (let x = 0; x < 9; x++) if (board[y][x]) drawPiece(x, y, board[y][x]);
-        }
-        if (selectedPos) {
-            ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 3; ctx.beginPath();
-            ctx.arc(margin + selectedPos.x * cellSize, margin + selectedPos.y * cellSize, 22, 0, Math.PI * 2); ctx.stroke();
-        }
+        for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.moveTo(margin + i * cellSize, margin); ctx.lineTo(margin + i * cellSize, margin + 4 * cellSize); ctx.stroke(); ctx.beginPath(); if (i === 0 || i === 8) { ctx.moveTo(margin + i * cellSize, margin + 4 * cellSize); ctx.lineTo(margin + i * cellSize, margin + 9 * cellSize); } else { ctx.moveTo(margin + i * cellSize, margin + 5 * cellSize); ctx.lineTo(margin + i * cellSize, margin + 9 * cellSize); } ctx.stroke(); }
+        ctx.beginPath(); ctx.moveTo(margin + 3 * cellSize, margin); ctx.lineTo(margin + 5 * cellSize, margin + 2 * cellSize); ctx.moveTo(margin + 5 * cellSize, margin); ctx.lineTo(margin + 3 * cellSize, margin + 2 * cellSize); ctx.moveTo(margin + 3 * cellSize, margin + 7 * cellSize); ctx.lineTo(margin + 5 * cellSize, margin + 9 * cellSize); ctx.moveTo(margin + 5 * cellSize, margin + 7 * cellSize); ctx.lineTo(margin + 3 * cellSize, margin + 9 * cellSize); ctx.stroke();
+        ctx.fillStyle = '#333'; ctx.font = "24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("楚 河", margin + 2 * cellSize, margin + 4.5 * cellSize); ctx.fillText("漢 界", margin + 6 * cellSize, margin + 4.5 * cellSize);
+        for (let y = 0; y < 10; y++) { for (let x = 0; x < 9; x++) if (board[y][x]) drawPiece(x, y, board[y][x]); }
+        if (selectedPos) { ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(margin + selectedPos.x * cellSize, margin + selectedPos.y * cellSize, 22, 0, Math.PI * 2); ctx.stroke(); }
     }
 
     function drawPiece(x, y, piece) {
         const color = piece.charAt(0); const px = margin + x * cellSize; const py = margin + y * cellSize;
-        ctx.beginPath(); ctx.arc(px, py, 20, 0, Math.PI * 2); ctx.fillStyle = '#fce4a6'; ctx.fill();
-        ctx.lineWidth = 2; ctx.strokeStyle = '#a67c00'; ctx.stroke();
-        ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI * 2); ctx.strokeStyle = color === 'R' ? '#c0392b' : '#2c3e50'; ctx.lineWidth = 1; ctx.stroke();
-        ctx.fillStyle = color === 'R' ? '#c0392b' : '#2c3e50'; ctx.font = "bold 20px 'Microsoft YaHei'"; ctx.fillText(pieceTexts[piece], px, py + 2); 
+        ctx.beginPath(); ctx.arc(px, py, 20, 0, Math.PI * 2); ctx.fillStyle = '#fce4a6'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#a67c00'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI * 2); ctx.strokeStyle = color === 'R' ? '#c0392b' : '#2c3e50'; ctx.stroke();
+        ctx.fillStyle = color === 'R' ? '#c0392b' : '#2c3e50'; ctx.font = "bold 20px sans-serif"; ctx.fillText(pieceTexts[piece], px, py + 2); 
     }
 
-    // 規則判定系統
-    function countPiecesBetween(startX, startY, endX, endY, currentBoard) {
-        let count = 0;
-        if (startX === endX) {
-            let min = Math.min(startY, endY), max = Math.max(startY, endY);
-            for (let y = min + 1; y < max; y++) if (currentBoard[y][startX] !== null) count++;
-        } else if (startY === endY) {
-            let min = Math.min(startX, endX), max = Math.max(startX, endX);
-            for (let x = min + 1; x < max; x++) if (currentBoard[startY][x] !== null) count++;
-        }
-        return count;
-    }
-
-    function inPalace(x, y, color) {
-        if (x < 3 || x > 5) return false;
-        if (color === 'R') return y >= 7 && y <= 9;
-        if (color === 'B') return y >= 0 && y <= 2;
+    function isValidMove(piece, sx, sy, ex, ey, b) {
+        const type = piece.charAt(2); const color = piece.charAt(0); const dx = Math.abs(ex - sx); const dy = Math.abs(ey - sy);
+        const count = (sx, sy, ex, ey, b) => { let c = 0; if (sx === ex) { for (let y = Math.min(sy, ey) + 1; y < Math.max(sy, ey); y++) if (b[y][sx]) c++; } else if (sy === ey) { for (let x = Math.min(sx, ex) + 1; x < Math.max(sx, ex); x++) if (b[sy][x]) c++; } return c; };
+        if (type === 'H') return (dx === 1 && dy === 2 && !b[sy + (ey > sy ? 1 : -1)][sx]) || (dx === 2 && dy === 1 && !b[sy][sx + (ex > sx ? 1 : -1)]);
+        if (type === 'E') return dx === 2 && dy === 2 && (color === 'R' ? ey >= 5 : ey <= 4) && !b[sy + (ey > sy ? 1 : -1)][sx + (ex > sx ? 1 : -1)];
+        if (type === 'R') return (dx === 0 || dy === 0) && count(sx, sy, ex, ey, b) === 0;
+        if (type === 'C') return (dx === 0 || dy === 0) && (b[ey][ex] ? count(sx, sy, ex, ey, b) === 1 : count(sx, sy, ex, ey, b) === 0);
+        if (type === 'P') return (dx === 0 && ey - sy === (color === 'R' ? -1 : 1)) || ((color === 'R' ? sy <= 4 : sy >= 5) && dy === 0 && dx === 1);
+        if (type === 'A') return dx === 1 && dy === 1 && ex >= 3 && ex <= 5 && (color === 'R' ? ey >= 7 : ey <= 2);
+        if (type === 'K') return dx + dy === 1 && ex >= 3 && ex <= 5 && (color === 'R' ? ey >= 7 : ey <= 2);
         return false;
     }
 
-    function isValidMove(piece, startX, startY, endX, endY, currentBoard) {
-        const color = piece.charAt(0);
-        const type = piece.charAt(2);
-        const dx = Math.abs(endX - startX);
-        const dy = Math.abs(endY - startY);
-
-        if (type === 'H') {
-            if (dx === 1 && dy === 2 && currentBoard[startY + (endY > startY ? 1 : -1)][startX] === null) return true;
-            if (dx === 2 && dy === 1 && currentBoard[startY][startX + (endX > startX ? 1 : -1)] === null) return true;
-            return false;
-        }
-        if (type === 'E') {
-            if (dx !== 2 || dy !== 2) return false;
-            if (color === 'R' && endY < 5) return false;
-            if (color === 'B' && endY > 4) return false;
-            if (currentBoard[startY + (endY > startY ? 1 : -1)][startX + (endX > startX ? 1 : -1)] !== null) return false;
-            return true;
-        }
-        if (type === 'R') {
-            if (dx > 0 && dy > 0) return false;
-            return countPiecesBetween(startX, startY, endX, endY, currentBoard) === 0;
-        }
-        if (type === 'C') {
-            if (dx > 0 && dy > 0) return false; 
-            let count = countPiecesBetween(startX, startY, endX, endY, currentBoard);
-            if (currentBoard[endY][endX] === null) return count === 0; 
-            else return count === 1; 
-        }
-        if (type === 'P') {
-            let forward = color === 'R' ? -1 : 1;
-            let crossedRiver = color === 'R' ? startY <= 4 : startY >= 5;
-            if (dx === 0 && endY - startY === forward) return true;
-            if (crossedRiver && dy === 0 && dx === 1) return true; 
-            return false;
-        }
-        if (type === 'A') {
-            if (dx !== 1 || dy !== 1) return false;
-            return inPalace(endX, endY, color);
-        }
-        if (type === 'K') {
-            if (dx + dy !== 1) return false;
-            return inPalace(endX, endY, color);
-        }
-        return false;
+    function isFacing(b) {
+        let rK, bK; for (let y = 0; y < 10; y++) for (let x = 0; x < 9; x++) { if (b[y][x] === 'R_K') rK = {x, y}; if (b[y][x] === 'B_K') bK = {x, y}; }
+        if (!rK || !bK || rK.x !== bK.x) return false;
+        for (let y = bK.y + 1; y < rK.y; y++) if (b[y][rK.x]) return false; return true;
     }
 
-    function isGeneralsFacing(tempBoard) {
-        let rKing = null, bKing = null;
-        for (let y = 0; y < 10; y++) {
-            for (let x = 0; x < 9; x++) {
-                if (tempBoard[y][x] === 'R_K') rKing = {x, y};
-                if (tempBoard[y][x] === 'B_K') bKing = {x, y};
-            }
-        }
-        if (!rKing || !bKing) return false; 
-        if (rKing.x === bKing.x) {
-            let count = 0;
-            for (let y = bKing.y + 1; y < rKing.y; y++) {
-                if (tempBoard[y][rKing.x] !== null) count++;
-            }
-            return count === 0; 
-        }
-        return false;
-    }
-
-    // AI 大腦
-    function evaluateBoard(tempBoard, aiColor) {
+    function evaluateBoard(b, aiColor) {
         let score = 0;
         for(let y=0; y<10; y++) {
             for(let x=0; x<9; x++) {
-                let p = tempBoard[y][x];
-                if(p) {
-                    let type = p.charAt(2);
-                    let color = p.charAt(0);
-                    let val = 0;
-                    let isRed = (color === 'R');
-                    let forwardY = isRed ? y : 9 - y;
-
-                    if(type === 'R') { val = 900; if(forwardY < 4) val += 30; if(x === 3 || x === 4 || x === 5) val += 15; }
-                    else if(type === 'H') { val = 400; if(x === 0 || x === 8) val -= 20; if(forwardY === 0 || forwardY === 9) val -= 20; if(forwardY <= 5 && x >= 2 && x <= 6) val += 30; }
-                    else if(type === 'C') { val = 450; if(x === 4) val += 20; if(forwardY === 0 || forwardY === 9) val += 15; }
-                    else if(type === 'P') { val = 100; if(forwardY <= 4) { val += 30; if(forwardY <= 3) val += 20; if(forwardY <= 1) val += 20; if(x >= 3 && x <= 5) val += 20; } }
-                    else if(type === 'A' || type === 'E') { val = 20; if(x === 4) val += 10; }
-                    else if(type === 'K') { val = 10000; }
-
-                    if(color === aiColor) score += val; else score -= val;
-                }
+                let p = b[y][x]; if(!p) continue;
+                let t = p.charAt(2), c = p.charAt(0), v = 0;
+                let fy = (c === 'R') ? y : 9 - y;
+                if(t === 'R') { v = 900; if(fy < 4) v += 30; if(x === 3 || x === 4 || x === 5) v += 15; }
+                else if(t === 'H') { v = 400; if(x === 0 || x === 8 || fy === 0 || fy === 9) v -= 20; if(fy <= 5 && x >= 2 && x <= 6) v += 30; }
+                else if(t === 'C') { v = 450; if(x === 4) v += 20; if(fy === 0 || fy === 9) v += 15; }
+                else if(t === 'P') { v = 100; if(fy <= 4) { v += 30; if(fy <= 3) v += 20; if(x >= 3 && x <= 5) v += 20; } }
+                else if(t === 'A' || t === 'E') { v = 20; if(x === 4) v += 10; }
+                else if(t === 'K') v = 10000;
+                score += (c === aiColor ? v : -v);
             }
         }
         return score;
     }
 
-    function getLegalMoves(currentBoard, color) {
-        let moves = [];
-        for(let sy=0; sy<10; sy++) {
-            for(let sx=0; sx<9; sx++) {
-                let piece = currentBoard[sy][sx];
-                if(piece && piece.charAt(0) === color) {
-                    for(let ey=0; ey<10; ey++) {
-                        for(let ex=0; ex<9; ex++) {
-                            let target = currentBoard[ey][ex];
-                            if(target && target.charAt(0) === color) continue;
+    function isRepetition(newBoard) {
+        let state = JSON.stringify(newBoard);
+        for (let i = historyStates.length - 1; i >= Math.max(0, historyStates.length - 12); i--) {
+            if (historyStates[i] === state) return true;
+        }
+        return false;
+    }
 
-                            if(isValidMove(piece, sx, sy, ex, ey, currentBoard)) {
-                                let tempBoard = currentBoard.map(row => [...row]);
-                                tempBoard[ey][ex] = piece;
-                                tempBoard[sy][sx] = null;
-                                if(!isGeneralsFacing(tempBoard)) {
-                                    moves.push({piece, sx, sy, ex, ey, target, tempBoard});
-                                }
-                            }
-                        }
-                    }
+    function getMoves(b, c) {
+        let ms = [];
+        for(let sy=0; sy<10; sy++) for(let sx=0; sx<9; sx++) {
+            let p = b[sy][sx]; if(p && p.charAt(0) === c) {
+                for(let ey=0; ey<10; ey++) for(let ex=0; ex<9; ex++) {
+                    if((b[ey][ex] && b[ey][ex].charAt(0) === c) || !isValidMove(p, sx, sy, ex, ey, b)) continue;
+                    let nb = b.map(r => [...r]); nb[ey][ex] = p; nb[sy][sx] = null;
+                    if(!isFacing(nb)) ms.push({p, sx, sy, ex, ey, target: b[ey][ex], nb});
                 }
             }
         }
-        return moves.sort((a, b) => (b.target ? 1 : 0) - (a.target ? 1 : 0));
+        return ms.sort((a, b) => (b.target ? 1 : 0) - (a.target ? 1 : 0));
     }
 
-    function minimax(tempBoard, depth, alpha, beta, isMaximizing, aiColor, humanColor) {
-        if (depth === 0) return evaluateBoard(tempBoard, aiColor);
-        let currentColor = isMaximizing ? aiColor : humanColor;
-        let moves = getLegalMoves(tempBoard, currentColor);
-
-        if (moves.length === 0) return isMaximizing ? -100000 : 100000; 
-
-        if (isMaximizing) {
-            let maxEval = -Infinity;
-            for (let move of moves) {
-                if (move.target && move.target.charAt(2) === 'K') return 100000 + depth; 
-                let eval = minimax(move.tempBoard, depth - 1, alpha, beta, false, aiColor, humanColor);
-                maxEval = Math.max(maxEval, eval);
-                alpha = Math.max(alpha, eval);
+    function minimax(b, depth, alpha, beta, isMax, aiC, huC) {
+        // 🌟 修正：推演中遇到重複局面，視為毫無價值的平局 (0分) 🌟
+        if (isRepetition(b)) return 0; 
+        
+        if (depth === 0) return evaluateBoard(b, aiC);
+        let ms = getMoves(b, isMax ? aiC : huC);
+        if (ms.length === 0) return isMax ? -100000 : 100000;
+        
+        if (isMax) {
+            let v = -Infinity; 
+            for (let m of ms) { 
+                if (m.target && m.target.charAt(2) === 'K') return 100000+depth; 
+                let e = minimax(m.nb, depth-1, alpha, beta, false, aiC, huC); 
+                v = Math.max(v, e); alpha = Math.max(alpha, v); 
                 if (beta <= alpha) break; 
-            }
-            return maxEval;
+            } return v;
         } else {
-            let minEval = Infinity;
-            for (let move of moves) {
-                if (move.target && move.target.charAt(2) === 'K') return -100000 - depth;
-                let eval = minimax(move.tempBoard, depth - 1, alpha, beta, true, aiColor, humanColor);
-                minEval = Math.min(minEval, eval);
-                beta = Math.min(beta, eval);
+            let v = Infinity; 
+            for (let m of ms) { 
+                if (m.target && m.target.charAt(2) === 'K') return -100000-depth; 
+                let e = minimax(m.nb, depth-1, alpha, beta, true, aiC, huC); 
+                v = Math.min(v, e); beta = Math.min(beta, v); 
                 if (beta <= alpha) break; 
-            }
-            return minEval;
+            } return v;
         }
     }
 
     function makeAIMove() {
         if (isGameOver) return;
-        let aiColor = currentPlayer;
-        let humanColor = aiColor === 'R' ? 'B' : 'R';
+        let aiC = currentPlayer, huC = (aiC === 'R' ? 'B' : 'R');
+        let ms = getMoves(board, aiC); if (ms.length === 0) { endGame(huC); return; }
         
-        let moves = getLegalMoves(board, aiColor);
-        if (moves.length === 0) { endGame(humanColor); return; }
-
-        let bestScore = -Infinity;
-        let bestMoves = [];
-        let alpha = -Infinity;
-        let beta = Infinity;
+        let bestS = -Infinity, bestMs = [], alpha = -Infinity, beta = Infinity;
         
-        const DEPTH = 3; 
+        for (let m of ms) {
+            if (m.target && m.target.charAt(2) === 'K') { bestMs = [m]; break; }
+            let s = minimax(m.nb, 2, alpha, beta, false, aiC, huC);
+            
+            // 🌟 絕對防禦：如果 AI 下這步棋會直接造成重複局面，強制大扣分！寧可送子也不要循環 🌟
+            if (isRepetition(m.nb)) s -= 8000;
 
-        for (let m of moves) {
-            if (m.target && m.target.charAt(2) === 'K') { bestMoves = [m]; break; }
-
-            let score = minimax(m.tempBoard, DEPTH - 1, alpha, beta, false, aiColor, humanColor);
-            score += Math.random() * 0.1; 
-
-            if (score > bestScore) {
-                bestScore = score;
-                bestMoves = [m];
-            } else if (Math.abs(score - bestScore) < 0.05) {
-                bestMoves.push(m);
-            }
-            alpha = Math.max(alpha, score);
+            s += Math.random() * 0.1;
+            if (s > bestS) { bestS = s; bestMs = [m]; } else if (Math.abs(s - bestS) < 0.05) { bestMs.push(m); }
+            alpha = Math.max(alpha, s);
         }
-
-        let chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
-
-        let notation = getNotation(chosen.piece, chosen.sx, chosen.sy, chosen.ex, chosen.ey, board);
-        addHistory(notation, currentPlayer);
-
-        board = chosen.tempBoard;
-        selectedPos = null;
-        document.getElementById('ai-thinking').innerText = "";
         
-        if (chosen.target && chosen.target.charAt(2) === 'K') { endGame(currentPlayer); return; }
-
-        currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
-        updateStatus(); drawBoard();
-
-        let mode = document.getElementById('mode').value;
-        if (mode === 'ai-ai' && !isGameOver) {
-            document.getElementById('ai-thinking').innerText = "🔮 AI 正在互搏...";
-            setTimeout(makeAIMove, 300); 
+        let c = bestMs[Math.floor(Math.random() * bestMs.length)];
+        addHistory(getNotation(c.p, c.sx, c.sy, c.ex, c.ey, board), currentPlayer);
+        
+        board = c.nb; 
+        historyStates.push(JSON.stringify(board)); // 確實紀錄歷史
+        
+        selectedPos = null; document.getElementById('ai-thinking').innerText = "";
+        if (c.target && c.target.charAt(2) === 'K') { endGame(currentPlayer); return; }
+        
+        currentPlayer = (currentPlayer === 'R' ? 'B' : 'R'); updateStatus(); drawBoard();
+        if (document.getElementById('mode').value === 'ai-ai' && !isGameOver) { 
+            document.getElementById('ai-thinking').innerText = "🔮 AI 互搏中..."; setTimeout(makeAIMove, 400); 
         }
     }
 
-    // 觸控與點擊整合
     function handleInteract(e) {
-        if (isGameOver) return;
-        let mode = document.getElementById('mode').value;
-        if (mode === 'ai-ai') return;
-        let humanColor = document.getElementById('human-color').value;
-        if (mode === 'ai' && currentPlayer !== humanColor) return;
-
-        let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-        let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
+        if (isGameOver || document.getElementById('mode').value === 'ai-ai') return;
+        if (document.getElementById('mode').value === 'ai' && currentPlayer !== document.getElementById('human-color').value) return;
+        
+        let cX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX, cY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
         const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-
-        const x = Math.round(((clientX - rect.left) * scaleX - margin) / cellSize);
-        const y = Math.round(((clientY - rect.top) * scaleY - margin) / cellSize);
-
+        const x = Math.round(((cX - rect.left) * (canvas.width / rect.width) - margin) / cellSize), y = Math.round(((cY - rect.top) * (canvas.height / rect.height) - margin) / cellSize);
+        
         if (x < 0 || x > 8 || y < 0 || y > 9) return;
-        const clickedPiece = board[y][x];
-
-        if (!selectedPos) {
-            if (clickedPiece && clickedPiece.charAt(0) === currentPlayer) {
-                selectedPos = {x, y}; document.getElementById('msg').innerText = ""; drawBoard();
-            }
-        } else {
-            if (clickedPiece && clickedPiece.charAt(0) === currentPlayer) {
-                selectedPos = {x, y}; document.getElementById('msg').innerText = ""; drawBoard(); return;
-            }
-
-            const piece = board[selectedPos.y][selectedPos.x];
-            if (isValidMove(piece, selectedPos.x, selectedPos.y, x, y, board)) {
+        const p = board[y][x];
+        
+        if (!selectedPos) { if (p && p.charAt(0) === currentPlayer) { selectedPos = {x, y}; drawBoard(); } }
+        else {
+            if (p && p.charAt(0) === currentPlayer) { selectedPos = {x, y}; drawBoard(); return; }
+            const selP = board[selectedPos.y][selectedPos.x];
+            if (isValidMove(selP, selectedPos.x, selectedPos.y, x, y, board)) {
+                let nb = board.map(r => [...r]); nb[y][x] = selP; nb[selectedPos.y][selectedPos.x] = null;
+                if (isFacing(nb)) { document.getElementById('msg').innerText = "❌ 違規：王不見王！"; return; }
                 
-                let tempBoard = board.map(row => [...row]);
-                tempBoard[y][x] = piece;
-                tempBoard[selectedPos.y][selectedPos.x] = null;
-
-                if (isGeneralsFacing(tempBoard)) {
-                    document.getElementById('msg').innerText = "❌ 違規：不可造成「王不見王」！";
-                    selectedPos = null; drawBoard(); return;
+                addHistory(getNotation(selP, selectedPos.x, selectedPos.y, x, y, board), currentPlayer);
+                board = nb; 
+                historyStates.push(JSON.stringify(board)); // 玩家走棋也要紀錄歷史
+                
+                if (p && p.charAt(2) === 'K') { endGame(currentPlayer); return; }
+                currentPlayer = (currentPlayer === 'R' ? 'B' : 'R'); selectedPos = null; updateStatus(); drawBoard();
+                if (document.getElementById('mode').value === 'ai' && !isGameOver) { 
+                    document.getElementById('ai-thinking').innerText = "🔮 AI 正在思考..."; setTimeout(makeAIMove, 600); 
                 }
-
-                let notation = getNotation(piece, selectedPos.x, selectedPos.y, x, y, board);
-                addHistory(notation, currentPlayer);
-
-                let targetPiece = board[y][x];
-                board = tempBoard;
-
-                if (targetPiece === 'B_K' || targetPiece === 'R_K') { endGame(currentPlayer); return; }
-
-                currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
-                selectedPos = null; document.getElementById('msg').innerText = "";
-                updateStatus(); drawBoard();
-
-                if (mode === 'ai' && !isGameOver) {
-                    setTimeout(() => document.getElementById('ai-thinking').innerText = "🔮 AI 正在推演未來...", 50);
-                    setTimeout(makeAIMove, 100); 
-                }
-
-            } else {
-                document.getElementById('msg').innerText = "❌ 違反規則！";
-                selectedPos = null; drawBoard();
-            }
+            } else { document.getElementById('msg').innerText = "❌ 走法不合規則"; selectedPos = null; drawBoard(); }
         }
     }
 
     canvas.addEventListener('click', handleInteract);
-    canvas.addEventListener('touchstart', function(e) { e.preventDefault(); handleInteract(e); }, {passive: false});
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInteract(e); }, {passive: false});
 
-    function updateStatus() {
-        const text = document.getElementById('turn-text');
-        text.innerText = currentPlayer === 'R' ? '🔴 輪到紅方下棋' : '⚫ 輪到黑方下棋';
-        text.style.color = currentPlayer === 'R' ? '#c0392b' : '#2c3e50';
-    }
-
-    function endGame(winnerColor) {
-        isGameOver = true; drawBoard(); 
-        
-        scoreStats[winnerColor]++;
-        localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats));
-        updateScoreBoard();
-
-        document.getElementById('win-text').innerText = winnerColor === 'R' ? '🎉 紅方獲勝！' : '🎉 黑方獲勝！';
-        document.getElementById('win-text').style.color = winnerColor === 'R' ? '#c0392b' : '#2c3e50';
-        document.getElementById('overlay').style.display = 'flex';
-        document.getElementById('ai-thinking').innerText = "";
-    }
+    function updateStatus() { document.getElementById('turn-text').innerText = (currentPlayer === 'R' ? '🔴 輪到紅方下棋' : '⚫ 輪到黑方下棋'); document.getElementById('turn-text').style.color = (currentPlayer === 'R' ? '#c0392b' : '#2c3e50'); }
+    function endGame(w) { isGameOver = true; drawBoard(); scoreStats[w]++; localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats)); updateScoreBoard(); document.getElementById('win-text').innerText = (w === 'R' ? '🎉 紅方獲勝！' : '🎉 黑方獲勝！'); document.getElementById('win-text').style.color = (w === 'R' ? '#c0392b' : '#2c3e50'); document.getElementById('overlay').style.display = 'flex'; }
     
-    // 初始化，設定紅黑陣營選擇是否顯示
     toggleColorSelect();
 </script>
-
 </body>
 </html>
