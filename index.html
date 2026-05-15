@@ -2,90 +2,132 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中國象棋</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>中國象棋 (手機 App 版)</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
-        .container { background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
-        .settings { display: flex; flex-direction: column; gap: 15px; min-width: 220px; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
-        select, button { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }
-        button { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; border: none; }
-        button:hover { background-color: #2ecc71; }
-        .btn-reset { background-color: #e74c3c; margin-top: auto;}
-        .btn-reset:hover { background-color: #c0392b; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
         
-        .game-area { display: flex; flex-direction: column; align-items: center; position: relative; max-width: 100%; }
+        /* 模擬手機 App 外框 */
+        .app-container { background-color: white; width: 100%; max-width: 500px; height: 100%; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
         
-        /* 🌟 手機版優化：防止滑動與自動縮放 🌟 */
-        canvas { 
-            background-color: #E2C28E; 
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.3); 
-            cursor: pointer; 
-            border-radius: 5px; 
-            max-width: 100%;       /* 小螢幕自動縮小 */
-            touch-action: none;    /* 防止觸控滑動破版 */
-        }
+        /* 分頁畫面切換控制 */
+        .screen { display: none; flex-direction: column; height: 100%; width: 100%; overflow-y: auto; padding-bottom: 20px;}
+        .screen.active { display: flex; }
 
-        .status { font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #c0392b; min-height: 30px; }
-        #msg { color: #e74c3c; font-size: 16px; min-height: 24px; font-weight: bold; margin-top: 10px; text-align: center;}
-        
-        .history-area { display: flex; flex-direction: column; min-width: 250px; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid #ddd; max-height: 600px; }
-        .history-area h2 { margin-top: 0; margin-bottom: 10px; font-size: 20px; color: #333; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .scoreboard { background: #f1c40f; color: #333; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 16px;}
-        .history-list { flex-grow: 1; overflow-y: auto; font-size: 18px; line-height: 1.8; font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; padding-right: 5px; }
-        .history-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 4px 0; }
-        .history-step { width: 35px; color: #7f8c8d; font-size: 14px; text-align: right; margin-right: 10px;}
+        /* --- 導覽列 (Top Bar) --- */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: #c0392b; color: white; padding: 10px 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 5;}
+        .top-bar button { background: none; border: none; color: white; font-size: 16px; font-weight: bold; cursor: pointer; padding: 5px; }
+        .top-bar .title { font-size: 18px; font-weight: bold; }
+
+        /* --- 第一頁：設定畫面 --- */
+        .settings-content { padding: 30px 20px; display: flex; flex-direction: column; gap: 20px; }
+        .app-logo { text-align: center; font-size: 50px; margin-bottom: 10px; }
+        .app-title { text-align: center; font-size: 28px; color: #c0392b; font-weight: bold; margin-top: 0;}
+        select, .btn-main, .btn-danger { padding: 15px; font-size: 18px; border-radius: 8px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; text-align: center;}
+        .btn-main { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.3);}
+        .btn-main:active { background-color: #2ecc71; transform: translateY(2px); box-shadow: none;}
+        .btn-danger { background-color: #e74c3c; color: white; border: none; font-weight: bold; margin-top: 20px;}
+        label { font-weight: bold; color: #333; margin-bottom: -10px; display: block;}
+
+        /* --- 第二頁：棋盤畫面 --- */
+        .game-area { display: flex; flex-direction: column; align-items: center; padding: 15px 10px; flex-grow: 1;}
+        canvas { background-color: #E2C28E; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); border-radius: 5px; max-width: 100%; touch-action: none; }
+        .status { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #c0392b; min-height: 28px; }
+        #msg { color: #e74c3c; font-size: 16px; font-weight: bold; margin-top: 10px; text-align: center; min-height: 24px;}
+        #ai-thinking { color: #8e44ad; font-weight: bold; text-align: center; margin-top: 5px; min-height: 24px;}
+
+        /* --- 第三頁：紀錄畫面 --- */
+        .history-content { padding: 20px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box;}
+        .scoreboard { background: #f1c40f; color: #333; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+        .history-list { flex-grow: 1; overflow-y: auto; font-size: 18px; line-height: 2; font-family: 'Microsoft YaHei', sans-serif; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;}
+        .history-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 8px 0; }
+        .history-step { width: 35px; color: #7f8c8d; font-size: 14px; text-align: right; margin-right: 15px;}
         .history-red { color: #c0392b; width: 90px; font-weight: bold;}
         .history-black { color: #2c3e50; width: 90px; font-weight: bold;}
 
-        #overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); flex-direction: column; justify-content: center; align-items: center; z-index: 10; border-radius: 10px; }
+        /* --- 結算彈出視窗 --- */
+        #overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
         #overlay h1 { color: #c0392b; font-size: 40px; margin: 0 0 20px 0;}
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="settings">
-        <h2>遊戲設定</h2>
-        <label>對弈模式：</label>
-        <select id="mode" onchange="initBoard()">
-            <option value="human">玩家 vs 玩家</option>
-            <option value="ai" selected>玩家 vs 電腦</option>
-            <option value="ai-ai">電腦 vs 電腦 (觀戰)</option>
-        </select>
+<div class="app-container">
 
-        <div id="color-select-div">
-            <label>玩家陣營：</label>
-            <select id="human-color" onchange="initBoard()">
-                <option value="R" selected>🔴 執紅 (先手)</option>
-                <option value="B">⚫ 執黑 (後手)</option>
+    <div id="screen-setup" class="screen active">
+        <div class="settings-content">
+            <div class="app-logo">♟️</div>
+            <h1 class="app-title">中國象棋</h1>
+            
+            <label>對弈模式：</label>
+            <select id="mode" onchange="toggleColorSelect()">
+                <option value="human">玩家 vs 玩家</option>
+                <option value="ai" selected>玩家 vs 電腦</option>
+                <option value="ai-ai">電腦 vs 電腦 (觀戰)</option>
             </select>
-        </div>
 
-        <button onclick="initBoard()" style="margin-top: 10px;">重新開始</button>
-        <div id="ai-thinking" style="color: #8e44ad; font-weight: bold; text-align: center; margin-top: 15px;"></div>
-        
-        <button class="btn-reset" onclick="clearScore()">🗑️ 清除戰績</button>
+            <div id="color-select-div">
+                <label>玩家陣營：</label>
+                <select id="human-color">
+                    <option value="R" selected>🔴 執紅 (先手)</option>
+                    <option value="B">⚫ 執黑 (後手)</option>
+                </select>
+            </div>
+
+            <button class="btn-main" onclick="startGame()">🔥 開始對弈 🔥</button>
+            
+            <div style="flex-grow: 1;"></div> <button class="btn-danger" onclick="clearScore()">🗑️ 清除所有戰績</button>
+        </div>
     </div>
 
-    <div class="game-area">
-        <div class="status" id="turn-text">🔴 輪到紅方下棋</div>
-        <canvas id="chessBoard" width="500" height="560"></canvas>
-        <div id="msg">請點擊棋子開始對弈</div>
+    <div id="screen-game" class="screen">
+        <div class="top-bar">
+            <button onclick="switchScreen('screen-setup')">⚙️ 設定</button>
+            <div class="title">棋盤</div>
+            <button onclick="switchScreen('screen-history')">📜 棋譜</button>
+        </div>
+
+        <div class="game-area">
+            <div class="status" id="turn-text">🔴 輪到紅方下棋</div>
+            <canvas id="chessBoard" width="500" height="560"></canvas>
+            <div id="msg">祝您好運！</div>
+            <div id="ai-thinking"></div>
+        </div>
+
         <div id="overlay">
             <h1 id="win-text">紅方獲勝！</h1>
-            <button onclick="initBoard()" style="font-size: 20px; padding: 10px 20px; width: auto;">再來一局</button>
+            <button class="btn-main" style="width: 200px;" onclick="startGame()">再來一局</button>
+            <button class="btn-danger" style="width: 200px;" onclick="switchScreen('screen-setup'); document.getElementById('overlay').style.display='none';">回主畫面</button>
         </div>
     </div>
 
-    <div class="history-area">
-        <h2>對局紀錄</h2>
-        <div class="scoreboard" id="score-board">🏆 戰績：紅 0 | 黑 0</div>
-        <div class="history-list" id="history-list"></div>
+    <div id="screen-history" class="screen">
+        <div class="top-bar">
+            <button onclick="switchScreen('screen-game')">◀ 返回棋盤</button>
+            <div class="title">對局紀錄</div>
+            <div style="width: 60px;"></div> </div>
+
+        <div class="history-content">
+            <div class="scoreboard" id="score-board">🏆 戰績：紅 0 | 黑 0</div>
+            <div class="history-list" id="history-list"></div>
+        </div>
     </div>
+
 </div>
 
 <script>
+    // --- 介面切換邏輯 ---
+    function switchScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function toggleColorSelect() {
+        let mode = document.getElementById('mode').value;
+        document.getElementById('color-select-div').style.display = (mode === 'human' || mode === 'ai-ai') ? 'none' : 'block';
+    }
+
+    // --- 遊戲核心邏輯 ---
     const canvas = document.getElementById('chessBoard');
     const ctx = canvas.getContext('2d');
     const cellSize = 50, margin = 50;
@@ -96,7 +138,7 @@
     let isGameOver = false;
     let moveCount = 1; 
 
-    // --- 戰績存儲系統 (localStorage) ---
+    // 戰績存儲系統 (localStorage)
     let scoreStats = JSON.parse(localStorage.getItem('xiangqi_scores')) || { R: 0, B: 0 };
     
     function updateScoreBoard() {
@@ -107,7 +149,7 @@
         if(confirm("確定要將雙方勝場戰績歸零嗎？")) {
             scoreStats = { R: 0, B: 0 };
             localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats));
-            updateScoreBoard();
+            alert("戰績已歸零！");
         }
     }
 
@@ -115,6 +157,12 @@
         'R_K': '帥', 'R_A': '仕', 'R_E': '相', 'R_H': '傌', 'R_R': '俥', 'R_C': '炮', 'R_P': '兵',
         'B_K': '將', 'B_A': '士', 'B_E': '象', 'B_H': '馬', 'B_R': '車', 'B_C': '砲', 'B_P': '卒'
     };
+
+    function startGame() {
+        switchScreen('screen-game');
+        document.getElementById('overlay').style.display = 'none';
+        initBoard();
+    }
 
     function initBoard() {
         board = [
@@ -134,7 +182,6 @@
         isGameOver = false;
         moveCount = 1;
         
-        document.getElementById('overlay').style.display = 'none';
         document.getElementById('msg').innerText = "遊戲開始！";
         document.getElementById('ai-thinking').innerText = "";
         document.getElementById('history-list').innerHTML = ""; 
@@ -142,14 +189,11 @@
         
         let mode = document.getElementById('mode').value;
         let humanColor = document.getElementById('human-color').value;
-        
-        // 隱藏/顯示陣營選擇 (AI vs AI 模式不需要選陣營)
-        document.getElementById('color-select-div').style.display = (mode === 'human' || mode === 'ai-ai') ? 'none' : 'block';
 
         updateStatus();
         drawBoard();
 
-        // 開局自動觸發 AI 判斷
+        // 觸發 AI
         if (mode === 'ai-ai') {
             document.getElementById('ai-thinking').innerText = "🔮 AI 正在互搏...";
             setTimeout(makeAIMove, 500);
@@ -333,7 +377,7 @@
         return false;
     }
 
-    // 🌟 終極變聰明版：更精細的陣地權重評估 🌟
+    // AI 大腦
     function evaluateBoard(tempBoard, aiColor) {
         let score = 0;
         for(let y=0; y<10; y++) {
@@ -343,52 +387,17 @@
                     let type = p.charAt(2);
                     let color = p.charAt(0);
                     let val = 0;
-                    
                     let isRed = (color === 'R');
-                    // forwardY：0代表敵方底線，9代表己方底線 (統一視覺，方便算分)
                     let forwardY = isRed ? y : 9 - y;
 
-                    // 1. 車 (Rook): 喜歡開闊地、敵陣、以及控制肋道和中線
-                    if(type === 'R') {
-                        val = 900;
-                        if(forwardY < 4) val += 30; // 壓入敵方陣地
-                        if(x === 3 || x === 4 || x === 5) val += 15; // 控制中路或肋道
-                    }
-                    // 2. 馬 (Horse): 邊馬無用，越靠近中心越活越強
-                    else if(type === 'H') {
-                        val = 400;
-                        if(x === 0 || x === 8) val -= 20; // 邊線扣分
-                        if(forwardY === 0 || forwardY === 9) val -= 20; // 底線扣分
-                        if(forwardY <= 5 && x >= 2 && x <= 6) val += 30; // 中前場高加成
-                    }
-                    // 3. 炮 (Cannon): 喜歡中路當頭炮，或是沉底炮
-                    else if(type === 'C') {
-                        val = 450;
-                        if(x === 4) val += 20; // 當頭炮
-                        if(forwardY === 0 || forwardY === 9) val += 15; // 沉底炮或防守炮
-                    }
-                    // 4. 兵/卒 (Pawn): 過河後威力大增
-                    else if(type === 'P') {
-                        val = 100;
-                        if(forwardY <= 4) { // 過河了
-                            val += 30; 
-                            if(forwardY <= 3) val += 20; // 逼近九宮格
-                            if(forwardY <= 1) val += 20; // 兵臨城下
-                            if(x >= 3 && x <= 5) val += 20; // 靠攏中路
-                        }
-                    }
-                    // 5. 士/相 (Advisor/Elephant): 基礎防禦
-                    else if(type === 'A' || type === 'E') {
-                        val = 20;
-                        if(x === 4) val += 10; // 站中路保護力較強
-                    }
-                    // 6. 將/帥 (King)
-                    else if(type === 'K') {
-                        val = 10000;
-                    }
+                    if(type === 'R') { val = 900; if(forwardY < 4) val += 30; if(x === 3 || x === 4 || x === 5) val += 15; }
+                    else if(type === 'H') { val = 400; if(x === 0 || x === 8) val -= 20; if(forwardY === 0 || forwardY === 9) val -= 20; if(forwardY <= 5 && x >= 2 && x <= 6) val += 30; }
+                    else if(type === 'C') { val = 450; if(x === 4) val += 20; if(forwardY === 0 || forwardY === 9) val += 15; }
+                    else if(type === 'P') { val = 100; if(forwardY <= 4) { val += 30; if(forwardY <= 3) val += 20; if(forwardY <= 1) val += 20; if(x >= 3 && x <= 5) val += 20; } }
+                    else if(type === 'A' || type === 'E') { val = 20; if(x === 4) val += 10; }
+                    else if(type === 'K') { val = 10000; }
 
-                    if(color === aiColor) score += val;
-                    else score -= val;
+                    if(color === aiColor) score += val; else score -= val;
                 }
             }
         }
@@ -424,7 +433,6 @@
 
     function minimax(tempBoard, depth, alpha, beta, isMaximizing, aiColor, humanColor) {
         if (depth === 0) return evaluateBoard(tempBoard, aiColor);
-
         let currentColor = isMaximizing ? aiColor : humanColor;
         let moves = getLegalMoves(tempBoard, currentColor);
 
@@ -466,7 +474,6 @@
         let alpha = -Infinity;
         let beta = Infinity;
         
-        // 推演深度維持 3 步，配合升級的兵法評估已經相當強大
         const DEPTH = 3; 
 
         for (let m of moves) {
@@ -498,32 +505,25 @@
         currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
         updateStatus(); drawBoard();
 
-        // 如果是 AI vs AI 模式，自動觸發下一步
         let mode = document.getElementById('mode').value;
         if (mode === 'ai-ai' && !isGameOver) {
             document.getElementById('ai-thinking').innerText = "🔮 AI 正在互搏...";
-            setTimeout(makeAIMove, 300); // 延遲0.3秒讓視覺更順暢
+            setTimeout(makeAIMove, 300); 
         }
     }
 
-    // 🌟 支援滑鼠與精準觸控的整合型監聽器 🌟
+    // 觸控與點擊整合
     function handleInteract(e) {
         if (isGameOver) return;
         let mode = document.getElementById('mode').value;
-        
-        // 如果是 AI vs AI，不允許玩家點擊棋盤
         if (mode === 'ai-ai') return;
-        
         let humanColor = document.getElementById('human-color').value;
         if (mode === 'ai' && currentPlayer !== humanColor) return;
 
-        // 判斷是手指觸控還是滑鼠點擊
         let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
         let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
         const rect = canvas.getBoundingClientRect();
-        
-        // 精準計算縮放比例 (因應手機螢幕縮小)
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
 
@@ -572,18 +572,14 @@
                 }
 
             } else {
-                document.getElementById('msg').innerText = "❌ 違反棋子走法規則！";
+                document.getElementById('msg').innerText = "❌ 違反規則！";
                 selectedPos = null; drawBoard();
             }
         }
     }
 
-    // 綁定滑鼠與觸控事件
     canvas.addEventListener('click', handleInteract);
-    canvas.addEventListener('touchstart', function(e) {
-        e.preventDefault(); // 防止雙擊放大或滑動干擾
-        handleInteract(e);
-    }, {passive: false});
+    canvas.addEventListener('touchstart', function(e) { e.preventDefault(); handleInteract(e); }, {passive: false});
 
     function updateStatus() {
         const text = document.getElementById('turn-text');
@@ -594,7 +590,6 @@
     function endGame(winnerColor) {
         isGameOver = true; drawBoard(); 
         
-        // 戰績存儲更新
         scoreStats[winnerColor]++;
         localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats));
         updateScoreBoard();
@@ -604,8 +599,9 @@
         document.getElementById('overlay').style.display = 'flex';
         document.getElementById('ai-thinking').innerText = "";
     }
-
-    initBoard();
+    
+    // 初始化呼叫，確保介面正確
+    toggleColorSelect();
 </script>
 
 </body>
