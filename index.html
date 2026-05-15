@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中國象棋</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .container { background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .settings { display: flex; flex-direction: column; gap: 15px; min-width: 220px; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+        select, button { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; }
+        button { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; border: none; }
+        button:hover { background-color: #2ecc71; }
+        .btn-reset { background-color: #e74c3c; margin-top: auto;}
+        .btn-reset:hover { background-color: #c0392b; }
+        
+        .game-area { display: flex; flex-direction: column; align-items: center; position: relative; max-width: 100%; }
+        
+        /* 🌟 手機版優化：防止滑動與自動縮放 🌟 */
+        canvas { 
+            background-color: #E2C28E; 
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.3); 
+            cursor: pointer; 
+            border-radius: 5px; 
+            max-width: 100%;       /* 小螢幕自動縮小 */
+            touch-action: none;    /* 防止觸控滑動破版 */
+        }
+
+        .status { font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #c0392b; min-height: 30px; }
+        #msg { color: #e74c3c; font-size: 16px; min-height: 24px; font-weight: bold; margin-top: 10px; text-align: center;}
+        
+        .history-area { display: flex; flex-direction: column; min-width: 250px; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid #ddd; max-height: 600px; }
+        .history-area h2 { margin-top: 0; margin-bottom: 10px; font-size: 20px; color: #333; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .scoreboard { background: #f1c40f; color: #333; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 16px;}
+        .history-list { flex-grow: 1; overflow-y: auto; font-size: 18px; line-height: 1.8; font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; padding-right: 5px; }
+        .history-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 4px 0; }
+        .history-step { width: 35px; color: #7f8c8d; font-size: 14px; text-align: right; margin-right: 10px;}
+        .history-red { color: #c0392b; width: 90px; font-weight: bold;}
+        .history-black { color: #2c3e50; width: 90px; font-weight: bold;}
+
+        #overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); flex-direction: column; justify-content: center; align-items: center; z-index: 10; border-radius: 10px; }
+        #overlay h1 { color: #c0392b; font-size: 40px; margin: 0 0 20px 0;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="settings">
+        <h2>遊戲設定</h2>
+        <label>對弈模式：</label>
+        <select id="mode" onchange="initBoard()">
+            <option value="human">玩家 vs 玩家</option>
+            <option value="ai" selected>玩家 vs 電腦</option>
+            <option value="ai-ai">電腦 vs 電腦 (觀戰)</option>
+        </select>
+
+        <div id="color-select-div">
+            <label>玩家陣營：</label>
+            <select id="human-color" onchange="initBoard()">
+                <option value="R" selected>🔴 執紅 (先手)</option>
+                <option value="B">⚫ 執黑 (後手)</option>
+            </select>
+        </div>
+
+        <button onclick="initBoard()" style="margin-top: 10px;">重新開始</button>
+        <div id="ai-thinking" style="color: #8e44ad; font-weight: bold; text-align: center; margin-top: 15px;"></div>
+        
+        <button class="btn-reset" onclick="clearScore()">🗑️ 清除戰績</button>
+    </div>
+
+    <div class="game-area">
+        <div class="status" id="turn-text">🔴 輪到紅方下棋</div>
+        <canvas id="chessBoard" width="500" height="560"></canvas>
+        <div id="msg">請點擊棋子開始對弈</div>
+        <div id="overlay">
+            <h1 id="win-text">紅方獲勝！</h1>
+            <button onclick="initBoard()" style="font-size: 20px; padding: 10px 20px; width: auto;">再來一局</button>
+        </div>
+    </div>
+
+    <div class="history-area">
+        <h2>對局紀錄</h2>
+        <div class="scoreboard" id="score-board">🏆 戰績：紅 0 | 黑 0</div>
+        <div class="history-list" id="history-list"></div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('chessBoard');
+    const ctx = canvas.getContext('2d');
+    const cellSize = 50, margin = 50;
+    
+    let board = [];
+    let currentPlayer = 'R'; 
+    let selectedPos = null;  
+    let isGameOver = false;
+    let moveCount = 1; 
+
+    // --- 戰績存儲系統 (localStorage) ---
+    let scoreStats = JSON.parse(localStorage.getItem('xiangqi_scores')) || { R: 0, B: 0 };
+    
+    function updateScoreBoard() {
+        document.getElementById('score-board').innerText = `🏆 戰績：紅方勝 ${scoreStats.R} | 黑方勝 ${scoreStats.B}`;
+    }
+
+    function clearScore() {
+        if(confirm("確定要將雙方勝場戰績歸零嗎？")) {
+            scoreStats = { R: 0, B: 0 };
+            localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats));
+            updateScoreBoard();
+        }
+    }
+
+    const pieceTexts = {
+        'R_K': '帥', 'R_A': '仕', 'R_E': '相', 'R_H': '傌', 'R_R': '俥', 'R_C': '炮', 'R_P': '兵',
+        'B_K': '將', 'B_A': '士', 'B_E': '象', 'B_H': '馬', 'B_R': '車', 'B_C': '砲', 'B_P': '卒'
+    };
+
+    function initBoard() {
+        board = [
+            ['B_R', 'B_H', 'B_E', 'B_A', 'B_K', 'B_A', 'B_E', 'B_H', 'B_R'],
+            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
+            [null,  'B_C', null,  null,  null,  null,  null,  'B_C', null ],
+            ['B_P', null,  'B_P', null,  'B_P', null,  'B_P', null,  'B_P'],
+            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
+            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
+            ['R_P', null,  'R_P', null,  'R_P', null,  'R_P', null,  'R_P'],
+            [null,  'R_C', null,  null,  null,  null,  null,  'R_C', null ],
+            [null,  null,  null,  null,  null,  null,  null,  null,  null ],
+            ['R_R', 'R_H', 'R_E', 'R_A', 'R_K', 'R_A', 'R_E', 'R_H', 'R_R']
+        ];
+        currentPlayer = 'R';
+        selectedPos = null;
+        isGameOver = false;
+        moveCount = 1;
+        
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('msg').innerText = "遊戲開始！";
+        document.getElementById('ai-thinking').innerText = "";
+        document.getElementById('history-list').innerHTML = ""; 
+        updateScoreBoard();
+        
+        let mode = document.getElementById('mode').value;
+        let humanColor = document.getElementById('human-color').value;
+        
+        // 隱藏/顯示陣營選擇 (AI vs AI 模式不需要選陣營)
+        document.getElementById('color-select-div').style.display = (mode === 'human' || mode === 'ai-ai') ? 'none' : 'block';
+
+        updateStatus();
+        drawBoard();
+
+        // 開局自動觸發 AI 判斷
+        if (mode === 'ai-ai') {
+            document.getElementById('ai-thinking').innerText = "🔮 AI 正在互搏...";
+            setTimeout(makeAIMove, 500);
+        } else if (mode === 'ai' && humanColor === 'B') {
+            document.getElementById('ai-thinking').innerText = "🔮 AI 正在推演未來...";
+            setTimeout(makeAIMove, 500);
+        }
+    }
+
+    // 記譜翻譯系統
+    function getNotation(piece, startX, startY, endX, endY, currentBoard) {
+        const type = piece.charAt(2);
+        const color = piece.charAt(0);
+        const isRed = (color === 'R');
+
+        let pieceName = pieceTexts[piece];
+        const redLines = ['九','八','七','六','五','四','三','二','一'];
+        let startLineStr = isRed ? redLines[startX] : (startX + 1).toString();
+        let endLineStr = isRed ? redLines[endX] : (endX + 1).toString();
+        
+        let action = '';
+        if (startY === endY) action = '平';
+        else action = isRed ? ((endY < startY) ? '進' : '退') : ((endY > startY) ? '進' : '退');
+
+        let valueStr = '';
+        if (['H', 'E', 'A'].includes(type) || action === '平') valueStr = endLineStr;
+        else {
+            let steps = Math.abs(endY - startY);
+            valueStr = isRed ? ['一','二','三','四','五','六','七','八','九'][steps-1] : steps.toString();
+        }
+
+        let sameColPieces = [];
+        for (let y = 0; y < 10; y++) if (currentBoard[y][startX] === piece) sameColPieces.push(y);
+        
+        if (sameColPieces.length === 2) {
+            let isFront = isRed ? (startY === Math.min(...sameColPieces)) : (startY === Math.max(...sameColPieces));
+            pieceName = (isFront ? "前" : "後") + pieceName;
+            startLineStr = ''; 
+        }
+        return pieceName + startLineStr + action + valueStr;
+    }
+
+    function addHistory(notation, color) {
+        const historyList = document.getElementById('history-list');
+        if (color === 'R') {
+            const row = document.createElement('div');
+            row.className = 'history-row';
+            row.innerHTML = `<span class="history-step">${moveCount}.</span><span class="history-red">${notation}</span><span class="history-black" id="black-move-${moveCount}"></span>`;
+            historyList.appendChild(row);
+        } else {
+            const blackMoveSpan = document.getElementById(`black-move-${moveCount}`);
+            if (blackMoveSpan) blackMoveSpan.innerText = notation;
+            moveCount++;
+        }
+        historyList.scrollTop = historyList.scrollHeight;
+    }
+
+    // 畫圖系統
+    function drawBoard() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+
+        for (let i = 0; i < 10; i++) { ctx.beginPath(); ctx.moveTo(margin, margin + i * cellSize); ctx.lineTo(margin + 8 * cellSize, margin + i * cellSize); ctx.stroke(); }
+        for (let i = 0; i < 9; i++) {
+            ctx.beginPath(); ctx.moveTo(margin + i * cellSize, margin); ctx.lineTo(margin + i * cellSize, margin + 4 * cellSize); ctx.stroke();
+            ctx.beginPath();
+            if (i === 0 || i === 8) { ctx.moveTo(margin + i * cellSize, margin + 4 * cellSize); ctx.lineTo(margin + i * cellSize, margin + 9 * cellSize); } 
+            else { ctx.moveTo(margin + i * cellSize, margin + 5 * cellSize); ctx.lineTo(margin + i * cellSize, margin + 9 * cellSize); }
+            ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(margin + 3 * cellSize, margin); ctx.lineTo(margin + 5 * cellSize, margin + 2 * cellSize);
+        ctx.moveTo(margin + 5 * cellSize, margin); ctx.lineTo(margin + 3 * cellSize, margin + 2 * cellSize);
+        ctx.moveTo(margin + 3 * cellSize, margin + 7 * cellSize); ctx.lineTo(margin + 5 * cellSize, margin + 9 * cellSize);
+        ctx.moveTo(margin + 5 * cellSize, margin + 7 * cellSize); ctx.lineTo(margin + 3 * cellSize, margin + 9 * cellSize);
+        ctx.stroke();
+
+        ctx.fillStyle = '#333'; ctx.font = "24px 'Microsoft YaHei'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("楚 河", margin + 2 * cellSize, margin + 4.5 * cellSize);
+        ctx.fillText("漢 界", margin + 6 * cellSize, margin + 4.5 * cellSize);
+
+        for (let y = 0; y < 10; y++) {
+            for (let x = 0; x < 9; x++) if (board[y][x]) drawPiece(x, y, board[y][x]);
+        }
+        if (selectedPos) {
+            ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 3; ctx.beginPath();
+            ctx.arc(margin + selectedPos.x * cellSize, margin + selectedPos.y * cellSize, 22, 0, Math.PI * 2); ctx.stroke();
+        }
+    }
+
+    function drawPiece(x, y, piece) {
+        const color = piece.charAt(0); const px = margin + x * cellSize; const py = margin + y * cellSize;
+        ctx.beginPath(); ctx.arc(px, py, 20, 0, Math.PI * 2); ctx.fillStyle = '#fce4a6'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = '#a67c00'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI * 2); ctx.strokeStyle = color === 'R' ? '#c0392b' : '#2c3e50'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = color === 'R' ? '#c0392b' : '#2c3e50'; ctx.font = "bold 20px 'Microsoft YaHei'"; ctx.fillText(pieceTexts[piece], px, py + 2); 
+    }
+
+    // 規則判定系統
+    function countPiecesBetween(startX, startY, endX, endY, currentBoard) {
+        let count = 0;
+        if (startX === endX) {
+            let min = Math.min(startY, endY), max = Math.max(startY, endY);
+            for (let y = min + 1; y < max; y++) if (currentBoard[y][startX] !== null) count++;
+        } else if (startY === endY) {
+            let min = Math.min(startX, endX), max = Math.max(startX, endX);
+            for (let x = min + 1; x < max; x++) if (currentBoard[startY][x] !== null) count++;
+        }
+        return count;
+    }
+
+    function inPalace(x, y, color) {
+        if (x < 3 || x > 5) return false;
+        if (color === 'R') return y >= 7 && y <= 9;
+        if (color === 'B') return y >= 0 && y <= 2;
+        return false;
+    }
+
+    function isValidMove(piece, startX, startY, endX, endY, currentBoard) {
+        const color = piece.charAt(0);
+        const type = piece.charAt(2);
+        const dx = Math.abs(endX - startX);
+        const dy = Math.abs(endY - startY);
+
+        if (type === 'H') {
+            if (dx === 1 && dy === 2 && currentBoard[startY + (endY > startY ? 1 : -1)][startX] === null) return true;
+            if (dx === 2 && dy === 1 && currentBoard[startY][startX + (endX > startX ? 1 : -1)] === null) return true;
+            return false;
+        }
+        if (type === 'E') {
+            if (dx !== 2 || dy !== 2) return false;
+            if (color === 'R' && endY < 5) return false;
+            if (color === 'B' && endY > 4) return false;
+            if (currentBoard[startY + (endY > startY ? 1 : -1)][startX + (endX > startX ? 1 : -1)] !== null) return false;
+            return true;
+        }
+        if (type === 'R') {
+            if (dx > 0 && dy > 0) return false;
+            return countPiecesBetween(startX, startY, endX, endY, currentBoard) === 0;
+        }
+        if (type === 'C') {
+            if (dx > 0 && dy > 0) return false; 
+            let count = countPiecesBetween(startX, startY, endX, endY, currentBoard);
+            if (currentBoard[endY][endX] === null) return count === 0; 
+            else return count === 1; 
+        }
+        if (type === 'P') {
+            let forward = color === 'R' ? -1 : 1;
+            let crossedRiver = color === 'R' ? startY <= 4 : startY >= 5;
+            if (dx === 0 && endY - startY === forward) return true;
+            if (crossedRiver && dy === 0 && dx === 1) return true; 
+            return false;
+        }
+        if (type === 'A') {
+            if (dx !== 1 || dy !== 1) return false;
+            return inPalace(endX, endY, color);
+        }
+        if (type === 'K') {
+            if (dx + dy !== 1) return false;
+            return inPalace(endX, endY, color);
+        }
+        return false;
+    }
+
+    function isGeneralsFacing(tempBoard) {
+        let rKing = null, bKing = null;
+        for (let y = 0; y < 10; y++) {
+            for (let x = 0; x < 9; x++) {
+                if (tempBoard[y][x] === 'R_K') rKing = {x, y};
+                if (tempBoard[y][x] === 'B_K') bKing = {x, y};
+            }
+        }
+        if (!rKing || !bKing) return false; 
+        if (rKing.x === bKing.x) {
+            let count = 0;
+            for (let y = bKing.y + 1; y < rKing.y; y++) {
+                if (tempBoard[y][rKing.x] !== null) count++;
+            }
+            return count === 0; 
+        }
+        return false;
+    }
+
+    // 🌟 終極變聰明版：更精細的陣地權重評估 🌟
+    function evaluateBoard(tempBoard, aiColor) {
+        let score = 0;
+        for(let y=0; y<10; y++) {
+            for(let x=0; x<9; x++) {
+                let p = tempBoard[y][x];
+                if(p) {
+                    let type = p.charAt(2);
+                    let color = p.charAt(0);
+                    let val = 0;
+                    
+                    let isRed = (color === 'R');
+                    // forwardY：0代表敵方底線，9代表己方底線 (統一視覺，方便算分)
+                    let forwardY = isRed ? y : 9 - y;
+
+                    // 1. 車 (Rook): 喜歡開闊地、敵陣、以及控制肋道和中線
+                    if(type === 'R') {
+                        val = 900;
+                        if(forwardY < 4) val += 30; // 壓入敵方陣地
+                        if(x === 3 || x === 4 || x === 5) val += 15; // 控制中路或肋道
+                    }
+                    // 2. 馬 (Horse): 邊馬無用，越靠近中心越活越強
+                    else if(type === 'H') {
+                        val = 400;
+                        if(x === 0 || x === 8) val -= 20; // 邊線扣分
+                        if(forwardY === 0 || forwardY === 9) val -= 20; // 底線扣分
+                        if(forwardY <= 5 && x >= 2 && x <= 6) val += 30; // 中前場高加成
+                    }
+                    // 3. 炮 (Cannon): 喜歡中路當頭炮，或是沉底炮
+                    else if(type === 'C') {
+                        val = 450;
+                        if(x === 4) val += 20; // 當頭炮
+                        if(forwardY === 0 || forwardY === 9) val += 15; // 沉底炮或防守炮
+                    }
+                    // 4. 兵/卒 (Pawn): 過河後威力大增
+                    else if(type === 'P') {
+                        val = 100;
+                        if(forwardY <= 4) { // 過河了
+                            val += 30; 
+                            if(forwardY <= 3) val += 20; // 逼近九宮格
+                            if(forwardY <= 1) val += 20; // 兵臨城下
+                            if(x >= 3 && x <= 5) val += 20; // 靠攏中路
+                        }
+                    }
+                    // 5. 士/相 (Advisor/Elephant): 基礎防禦
+                    else if(type === 'A' || type === 'E') {
+                        val = 20;
+                        if(x === 4) val += 10; // 站中路保護力較強
+                    }
+                    // 6. 將/帥 (King)
+                    else if(type === 'K') {
+                        val = 10000;
+                    }
+
+                    if(color === aiColor) score += val;
+                    else score -= val;
+                }
+            }
+        }
+        return score;
+    }
+
+    function getLegalMoves(currentBoard, color) {
+        let moves = [];
+        for(let sy=0; sy<10; sy++) {
+            for(let sx=0; sx<9; sx++) {
+                let piece = currentBoard[sy][sx];
+                if(piece && piece.charAt(0) === color) {
+                    for(let ey=0; ey<10; ey++) {
+                        for(let ex=0; ex<9; ex++) {
+                            let target = currentBoard[ey][ex];
+                            if(target && target.charAt(0) === color) continue;
+
+                            if(isValidMove(piece, sx, sy, ex, ey, currentBoard)) {
+                                let tempBoard = currentBoard.map(row => [...row]);
+                                tempBoard[ey][ex] = piece;
+                                tempBoard[sy][sx] = null;
+                                if(!isGeneralsFacing(tempBoard)) {
+                                    moves.push({piece, sx, sy, ex, ey, target, tempBoard});
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return moves.sort((a, b) => (b.target ? 1 : 0) - (a.target ? 1 : 0));
+    }
+
+    function minimax(tempBoard, depth, alpha, beta, isMaximizing, aiColor, humanColor) {
+        if (depth === 0) return evaluateBoard(tempBoard, aiColor);
+
+        let currentColor = isMaximizing ? aiColor : humanColor;
+        let moves = getLegalMoves(tempBoard, currentColor);
+
+        if (moves.length === 0) return isMaximizing ? -100000 : 100000; 
+
+        if (isMaximizing) {
+            let maxEval = -Infinity;
+            for (let move of moves) {
+                if (move.target && move.target.charAt(2) === 'K') return 100000 + depth; 
+                let eval = minimax(move.tempBoard, depth - 1, alpha, beta, false, aiColor, humanColor);
+                maxEval = Math.max(maxEval, eval);
+                alpha = Math.max(alpha, eval);
+                if (beta <= alpha) break; 
+            }
+            return maxEval;
+        } else {
+            let minEval = Infinity;
+            for (let move of moves) {
+                if (move.target && move.target.charAt(2) === 'K') return -100000 - depth;
+                let eval = minimax(move.tempBoard, depth - 1, alpha, beta, true, aiColor, humanColor);
+                minEval = Math.min(minEval, eval);
+                beta = Math.min(beta, eval);
+                if (beta <= alpha) break; 
+            }
+            return minEval;
+        }
+    }
+
+    function makeAIMove() {
+        if (isGameOver) return;
+        let aiColor = currentPlayer;
+        let humanColor = aiColor === 'R' ? 'B' : 'R';
+        
+        let moves = getLegalMoves(board, aiColor);
+        if (moves.length === 0) { endGame(humanColor); return; }
+
+        let bestScore = -Infinity;
+        let bestMoves = [];
+        let alpha = -Infinity;
+        let beta = Infinity;
+        
+        // 推演深度維持 3 步，配合升級的兵法評估已經相當強大
+        const DEPTH = 3; 
+
+        for (let m of moves) {
+            if (m.target && m.target.charAt(2) === 'K') { bestMoves = [m]; break; }
+
+            let score = minimax(m.tempBoard, DEPTH - 1, alpha, beta, false, aiColor, humanColor);
+            score += Math.random() * 0.1; 
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMoves = [m];
+            } else if (Math.abs(score - bestScore) < 0.05) {
+                bestMoves.push(m);
+            }
+            alpha = Math.max(alpha, score);
+        }
+
+        let chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+        let notation = getNotation(chosen.piece, chosen.sx, chosen.sy, chosen.ex, chosen.ey, board);
+        addHistory(notation, currentPlayer);
+
+        board = chosen.tempBoard;
+        selectedPos = null;
+        document.getElementById('ai-thinking').innerText = "";
+        
+        if (chosen.target && chosen.target.charAt(2) === 'K') { endGame(currentPlayer); return; }
+
+        currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
+        updateStatus(); drawBoard();
+
+        // 如果是 AI vs AI 模式，自動觸發下一步
+        let mode = document.getElementById('mode').value;
+        if (mode === 'ai-ai' && !isGameOver) {
+            document.getElementById('ai-thinking').innerText = "🔮 AI 正在互搏...";
+            setTimeout(makeAIMove, 300); // 延遲0.3秒讓視覺更順暢
+        }
+    }
+
+    // 🌟 支援滑鼠與精準觸控的整合型監聽器 🌟
+    function handleInteract(e) {
+        if (isGameOver) return;
+        let mode = document.getElementById('mode').value;
+        
+        // 如果是 AI vs AI，不允許玩家點擊棋盤
+        if (mode === 'ai-ai') return;
+        
+        let humanColor = document.getElementById('human-color').value;
+        if (mode === 'ai' && currentPlayer !== humanColor) return;
+
+        // 判斷是手指觸控還是滑鼠點擊
+        let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+        const rect = canvas.getBoundingClientRect();
+        
+        // 精準計算縮放比例 (因應手機螢幕縮小)
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        const x = Math.round(((clientX - rect.left) * scaleX - margin) / cellSize);
+        const y = Math.round(((clientY - rect.top) * scaleY - margin) / cellSize);
+
+        if (x < 0 || x > 8 || y < 0 || y > 9) return;
+        const clickedPiece = board[y][x];
+
+        if (!selectedPos) {
+            if (clickedPiece && clickedPiece.charAt(0) === currentPlayer) {
+                selectedPos = {x, y}; document.getElementById('msg').innerText = ""; drawBoard();
+            }
+        } else {
+            if (clickedPiece && clickedPiece.charAt(0) === currentPlayer) {
+                selectedPos = {x, y}; document.getElementById('msg').innerText = ""; drawBoard(); return;
+            }
+
+            const piece = board[selectedPos.y][selectedPos.x];
+            if (isValidMove(piece, selectedPos.x, selectedPos.y, x, y, board)) {
+                
+                let tempBoard = board.map(row => [...row]);
+                tempBoard[y][x] = piece;
+                tempBoard[selectedPos.y][selectedPos.x] = null;
+
+                if (isGeneralsFacing(tempBoard)) {
+                    document.getElementById('msg').innerText = "❌ 違規：不可造成「王不見王」！";
+                    selectedPos = null; drawBoard(); return;
+                }
+
+                let notation = getNotation(piece, selectedPos.x, selectedPos.y, x, y, board);
+                addHistory(notation, currentPlayer);
+
+                let targetPiece = board[y][x];
+                board = tempBoard;
+
+                if (targetPiece === 'B_K' || targetPiece === 'R_K') { endGame(currentPlayer); return; }
+
+                currentPlayer = currentPlayer === 'R' ? 'B' : 'R';
+                selectedPos = null; document.getElementById('msg').innerText = "";
+                updateStatus(); drawBoard();
+
+                if (mode === 'ai' && !isGameOver) {
+                    setTimeout(() => document.getElementById('ai-thinking').innerText = "🔮 AI 正在推演未來...", 50);
+                    setTimeout(makeAIMove, 100); 
+                }
+
+            } else {
+                document.getElementById('msg').innerText = "❌ 違反棋子走法規則！";
+                selectedPos = null; drawBoard();
+            }
+        }
+    }
+
+    // 綁定滑鼠與觸控事件
+    canvas.addEventListener('click', handleInteract);
+    canvas.addEventListener('touchstart', function(e) {
+        e.preventDefault(); // 防止雙擊放大或滑動干擾
+        handleInteract(e);
+    }, {passive: false});
+
+    function updateStatus() {
+        const text = document.getElementById('turn-text');
+        text.innerText = currentPlayer === 'R' ? '🔴 輪到紅方下棋' : '⚫ 輪到黑方下棋';
+        text.style.color = currentPlayer === 'R' ? '#c0392b' : '#2c3e50';
+    }
+
+    function endGame(winnerColor) {
+        isGameOver = true; drawBoard(); 
+        
+        // 戰績存儲更新
+        scoreStats[winnerColor]++;
+        localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats));
+        updateScoreBoard();
+
+        document.getElementById('win-text').innerText = winnerColor === 'R' ? '🎉 紅方獲勝！' : '🎉 黑方獲勝！';
+        document.getElementById('win-text').style.color = winnerColor === 'R' ? '#c0392b' : '#2c3e50';
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('ai-thinking').innerText = "";
+    }
+
+    initBoard();
+</script>
+
+</body>
+</html>
