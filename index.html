@@ -21,12 +21,50 @@
 
         /* --- 第一頁：設定畫面 --- */
         .settings-content { padding: 30px 20px; display: flex; flex-direction: column; gap: 20px; }
-        .app-logo { text-align: center; font-size: 50px; margin-bottom: 10px; }
+        
+        /* 🌟 重新用 CSS 畫一個專業的中國象棋 LOGO 🌟 */
+        .app-logo {
+            text-align: center;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .app-logo-piece {
+            width: 70px;
+            height: 70px;
+            background-color: #fce4a6; /* 標準木頭底色 */
+            border-radius: 50%;
+            border: 3px solid #a67c00; /* 金色外框 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .app-logo-text {
+            color: #c0392b; /* 紅帥文字 */
+            font-size: 40px;
+            font-weight: bold;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            text-shadow: 1px 1px 0 #fff, 0 0 5px rgba(192, 57, 43, 0.4); /* 書法字質感 */
+        }
+        /* LOGO 內圈裝飾線 */
+        .app-logo-piece::after {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border-radius: 50%;
+            border: 1px solid rgba(192, 57, 43, 0.4);
+        }
+
         .app-title { text-align: center; font-size: 28px; color: #c0392b; font-weight: bold; margin-top: 0;}
         select, .btn-main, .btn-danger { padding: 15px; font-size: 18px; border-radius: 8px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; text-align: center;}
         .btn-main { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.3);}
         .btn-main:active { background-color: #2ecc71; transform: translateY(2px); box-shadow: none;}
         .btn-danger { background-color: #e74c3c; color: white; border: none; font-weight: bold; margin-top: 20px;}
+        
+        /* 🌟 修復問題：修正文字遮住，將 margin-bottom 改為正 8px 🌟 */
         label { font-weight: bold; color: #333; margin-bottom: 8px; display: block;}
 
         /* --- 第二頁：棋盤畫面 --- */
@@ -56,7 +94,11 @@
 
     <div id="screen-setup" class="screen active">
         <div class="settings-content">
-            <div class="app-logo">♟️</div>
+            <div class="app-logo">
+                <div class="app-logo-piece">
+                    <span class="app-logo-text">帥</span>
+                </div>
+            </div>
             <h1 class="app-title">中國象棋</h1>
             
             <label>對弈模式：</label>
@@ -116,7 +158,7 @@
 </div>
 
 <script>
-    // --- 介面切換邏輯 ---
+    // 介面切換邏輯
     function switchScreen(screenId) {
         document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
@@ -127,7 +169,7 @@
         document.getElementById('color-select-div').style.display = (mode === 'human' || mode === 'ai-ai') ? 'none' : 'block';
     }
 
-    // --- 遊戲核心邏輯 ---
+    // 遊戲核心邏輯
     const canvas = document.getElementById('chessBoard');
     const ctx = canvas.getContext('2d');
     const cellSize = 50, margin = 50;
@@ -149,6 +191,7 @@
         if(confirm("確定要將雙方勝場戰績歸零嗎？")) {
             scoreStats = { R: 0, B: 0 };
             localStorage.setItem('xiangqi_scores', JSON.stringify(scoreStats));
+            updateScoreBoard();
             alert("戰績已歸零！");
         }
     }
@@ -600,7 +643,7 @@
         document.getElementById('ai-thinking').innerText = "";
     }
     
-    // 初始化呼叫，確保介面正確
+    // 初始化，設定紅黑陣營選擇是否顯示
     toggleColorSelect();
 </script>
 
