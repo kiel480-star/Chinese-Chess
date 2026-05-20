@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中國象棋</title>
+    <title>中國象棋 (iOS語音解鎖版)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
         .app-container { background-color: white; width: 100%; max-width: 500px; height: 100%; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
@@ -24,6 +24,7 @@
         .app-title { text-align: center; font-size: 28px; color: #c0392b; font-weight: bold; margin-top: 0;}
         select, .btn-main, .btn-danger { padding: 15px; font-size: 18px; border-radius: 8px; border: 1px solid #ccc; width: 100%; box-sizing: border-box; text-align: center;}
         .btn-main { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.3);}
+        .btn-main:active { transform: translateY(2px); box-shadow: none; }
         .btn-danger { background-color: #e74c3c; color: white; border: none; font-weight: bold; margin-top: 20px;}
         label { font-weight: bold; color: #333; margin-bottom: 8px; display: block;}
 
@@ -116,42 +117,52 @@
 
     const pieceTexts = { 'R_K': '帥', 'R_A': '仕', 'R_E': '相', 'R_H': '傌', 'R_R': '俥', 'R_C': '炮', 'R_P': '兵', 'B_K': '將', 'B_A': '士', 'B_E': '象', 'B_H': '馬', 'B_R': '車', 'B_C': '砲', 'B_P': '卒' };
 
-    // 🌟 新增：將軍語音系統 🌟
+    // 🌟 破解 iOS 語音限制的核心：無聲解鎖 🌟
+    let isAudioUnlocked = false;
+    function unlockAudio() {
+        if (!isAudioUnlocked && 'speechSynthesis' in window) {
+            let unlockMsg = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(unlockMsg);
+            isAudioUnlocked = true;
+        }
+    }
+
     function playCheckSound() {
         if ('speechSynthesis' in window) {
             let msg = new SpeechSynthesisUtterance("將軍！");
-            msg.lang = 'zh-HK'; // 設定為廣東話 (若裝置不支援，會自動退回普通話)
-            msg.rate = 1.1; // 講話速度稍微快一點，更有氣勢
+            msg.lang = 'zh-HK'; 
+            msg.rate = 1.1; 
             window.speechSynthesis.speak(msg);
         }
     }
 
-    // 🌟 新增：將軍偵測雷達 🌟
     function isKingInCheck(tempBoard, color) {
         let kx = -1, ky = -1;
-        // 1. 先找出自己的老將在哪裡
         for(let y=0; y<10; y++) {
             for(let x=0; x<9; x++) {
                 if(tempBoard[y][x] === color + '_K') { kx = x; ky = y; break; }
             }
             if(kx !== -1) break;
         }
-        if(kx === -1) return true; // 已經被吃了
+        if(kx === -1) return true; 
         
-        // 2. 檢查對手的所有棋子，看有沒有人能走到老將的位置
         let opp = color === 'R' ? 'B' : 'R';
         for(let y=0; y<10; y++) {
             for(let x=0; x<9; x++) {
                 let p = tempBoard[y][x];
                 if(p && p.charAt(0) === opp) {
-                    if(isValidMove(p, x, y, kx, ky, tempBoard)) return true; // 有人能吃王，被將軍了！
+                    if(isValidMove(p, x, y, kx, ky, tempBoard)) return true; 
                 }
             }
         }
         return false;
     }
 
-    function startGame() { switchScreen('screen-game'); initBoard(); }
+    function startGame() { 
+        unlockAudio(); // 🌟 當玩家按下「開始對弈」的瞬間，立刻解鎖語音！
+        switchScreen('screen-game'); 
+        initBoard(); 
+    }
 
     function initBoard() {
         board = [
@@ -325,14 +336,13 @@
         updateStatus(); 
         drawBoard();
 
-        // 🌟 檢查剛剛這步棋有沒有造成對方將軍 🌟
         if (!isGameOver) {
             if (isKingInCheck(board, currentPlayer)) {
                 document.getElementById('msg').innerHTML = "⚠️ 將軍！";
                 document.getElementById('msg').style.color = "#c0392b";
-                playCheckSound(); // 觸發語音！
+                playCheckSound(); 
             } else {
-                document.getElementById('msg').innerHTML = ""; // 沒有將軍就清空提示
+                document.getElementById('msg').innerHTML = ""; 
             }
         }
 
@@ -342,6 +352,8 @@
     }
 
     function handleInteract(e) {
+        unlockAudio(); // 🌟 確保玩家點擊棋盤時，防守式的解鎖一次
+        
         if (isGameOver || document.getElementById('mode').value === 'ai-ai') return;
         if (document.getElementById('mode').value === 'ai' && currentPlayer !== document.getElementById('human-color').value) return;
         
@@ -374,12 +386,11 @@
                 updateStatus(); 
                 drawBoard();
                 
-                // 🌟 檢查玩家這步棋有沒有將軍 AI 🌟
                 if (!isGameOver) {
                     if (isKingInCheck(board, currentPlayer)) {
                         document.getElementById('msg').innerHTML = "⚠️ 將軍！";
                         document.getElementById('msg').style.color = "#c0392b";
-                        playCheckSound(); // 觸發語音！
+                        playCheckSound(); 
                     } else {
                         document.getElementById('msg').innerHTML = ""; 
                     }
